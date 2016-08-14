@@ -1,7 +1,6 @@
 ﻿// MIT License Copyright 2014 (c) David Melendez. All rights reserved. See License.txt in the project root for license information.
 using Amazon.DynamoDBv2.DataModel;
 using ElCamino.AspNet.Identity.Dynamo.Helpers;
-using Microsoft.AspNet.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,7 +43,6 @@ namespace ElCamino.AspNet.Identity.Dynamo.Model
             return Guid.NewGuid().ToString();
         }
 
-        [DynamoDBGlobalSecondaryIndexHashKey(Constants.SecondaryIndexNames.UserNameIndex)]
         public override string UserName
         {
             get
@@ -81,6 +79,8 @@ namespace ElCamino.AspNet.Identity.Dynamo.Model
         public ICollection<TClaim> Claims { get; private set; }
 
         [DynamoDBGlobalSecondaryIndexHashKey(Constants.SecondaryIndexNames.UserEmailIndex)]
+        public virtual string NormalizedEmail { get; set; }
+
         public virtual string Email { get; set; }
 
         public virtual bool EmailConfirmed { get; set; }
@@ -110,6 +110,9 @@ namespace ElCamino.AspNet.Identity.Dynamo.Model
         public virtual string SecurityStamp { get; set; }
 
         public virtual bool TwoFactorEnabled { get; set; }
+
+        [DynamoDBGlobalSecondaryIndexHashKey(Constants.SecondaryIndexNames.UserNameIndex)]
+        public virtual string NormalizedUserName { get; set; }
 
         public virtual string UserName { get; set; }
     }

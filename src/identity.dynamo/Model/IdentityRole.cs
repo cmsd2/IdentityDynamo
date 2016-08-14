@@ -1,7 +1,6 @@
 ﻿// MIT License Copyright 2014 (c) David Melendez. All rights reserved. See License.txt in the project root for license information.
 using Amazon.DynamoDBv2.DataModel;
 using ElCamino.AspNet.Identity.Dynamo.Helpers;
-using Microsoft.AspNet.Identity;
 using System;
 using System.Collections.Generic;
 
@@ -44,7 +43,7 @@ namespace ElCamino.AspNet.Identity.Dynamo.Model
          IRole<TKey> where TUserRole : IdentityUserRole<TKey>
     {
 
-        public IdentityRole() : base()
+        public IdentityRole()
         {
             this.Users = new List<TUserRole>();
         }

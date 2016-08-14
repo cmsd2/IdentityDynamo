@@ -42,6 +42,14 @@ namespace ElCamino.AspNet.Identity.Dynamo.Model
 
         public virtual string ProviderKey { get; set; }
 
+        [DynamoDBGlobalSecondaryIndexHashKey(Constants.SecondaryIndexNames.UserLoginProviderKeyIndex)]
+        public string LoginProviderPartitionKey
+        {
+            get { return BuildLoginProviderPartitionKey(LoginProvider, ProviderKey); }
+            set { }
+        }
+
+        [DynamoDBGlobalSecondaryIndexRangeKey(Constants.SecondaryIndexNames.UserLoginProviderKeyIndex)]
         [DynamoDBRangeKey]
         public TKey Id { get; set; }
 
@@ -53,6 +61,11 @@ namespace ElCamino.AspNet.Identity.Dynamo.Model
 
         [DynamoDBGlobalSecondaryIndexHashKey(Constants.SecondaryIndexNames.UserEmailIndex)]
         public string Email { get; set; }
+
+        public static string BuildLoginProviderPartitionKey(string loginProvider, string providerKey)
+        {
+            return $"{loginProvider}_{providerKey}";
+        }
 
     }
 

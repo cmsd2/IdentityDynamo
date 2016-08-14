@@ -20,12 +20,17 @@ namespace ElCamino.AspNet.Identity.Dynamo
             public const string RolesTable = "AspNetRoles";
             public const string UsersTable = "AspNetUsers";
             public const string IndexTable = "AspNetIndex";
+            public const string UserRolesTable = "AspNetUserRoles";
+            public const string UserClaimsTable = "AspNetUserClaims";
+            public const string UserLoginsTable = "AspNetUserLogins";
         }
 
         public static class SecondaryIndexNames
         {
             public const string UserEmailIndex = "UserEmailIndex";
             public const string UserNameIndex = "UserNameIndex";
+            public const string RoleUsersIndex = "RoleUsersIndex";
+            public const string UserLoginProviderKeyIndex = "UserLoginProviderKeyIndex";
         }
 
         public static class RowKeyConstants

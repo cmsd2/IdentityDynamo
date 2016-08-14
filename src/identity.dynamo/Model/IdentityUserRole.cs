@@ -1,7 +1,6 @@
 ﻿// MIT License Copyright 2014 (c) David Melendez. All rights reserved. See License.txt in the project root for license information.
 using Amazon.DynamoDBv2.DataModel;
 using ElCamino.AspNet.Identity.Dynamo.Helpers;
-using Microsoft.AspNet.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,6 +39,7 @@ namespace ElCamino.AspNet.Identity.Dynamo.Model
     {
 
         [DynamoDBRangeKey]
+        [DynamoDBGlobalSecondaryIndexHashKey(Constants.SecondaryIndexNames.RoleUsersIndex)]
         public TKey Id
         {
             get
@@ -58,6 +58,7 @@ namespace ElCamino.AspNet.Identity.Dynamo.Model
         public string RoleName { get; set; }
 
         [DynamoDBHashKey]
+        [DynamoDBGlobalSecondaryIndexRangeKey(Constants.SecondaryIndexNames.RoleUsersIndex)]
         public virtual TKey UserId { get; set; }
 
         [DynamoDBGlobalSecondaryIndexHashKey(Constants.SecondaryIndexNames.UserNameIndex)]

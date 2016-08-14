@@ -9,6 +9,7 @@ using System.Threading;
 using System.Configuration;
 using ElCamino.AspNet.Identity.Dynamo.Configuration;
 using Amazon.DynamoDBv2;
+using Microsoft.Extensions.Logging;
 
 namespace ElCamino.AspNet.Identity.Dynamo.Tests.ModelTests
 {
@@ -70,6 +71,7 @@ namespace ElCamino.AspNet.Identity.Dynamo.Tests.ModelTests
             System.Threading.Thread.Sleep(3000);
 
             using (UserStore<IdentityUser> store = new UserStore<IdentityUser>(
+                new LoggerFactory(),
                 new IdentityCloudContext<IdentityUser>(new IdentityConfiguration()
                 {
                     ServiceURL = strValidConnection,
@@ -87,6 +89,7 @@ namespace ElCamino.AspNet.Identity.Dynamo.Tests.ModelTests
             ConfigurationManager.RefreshSection(IdentityConfigurationSection.Name);
 
             using (UserStore<IdentityUser> store = new UserStore<IdentityUser>(
+                new LoggerFactory(),
                 new IdentityCloudContext<IdentityUser>()))
             {
                 var task = store.CreateTablesIfNotExists();

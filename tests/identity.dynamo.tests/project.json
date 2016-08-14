@@ -1,0 +1,43 @@
+﻿{
+  "version": "1.0.0",
+  "buildOptions": {
+    "emitEntryPoint": false
+  },
+  "dependencies": {
+    "System.Net.Requests": "4.0.11",
+    "Newtonsoft.Json": "8.0.2",
+    "System.Net.Http": "4.1.0",
+    "System.Runtime.Serialization.Primitives": "4.1.1",
+    "System.Runtime.Extensions": "4.1.0",
+    "AWSSDK.DynamoDBv2": "3.2.5-beta",
+    "Microsoft.AspNetCore.Identity": "1.0.0",
+    "Microsoft.Extensions.Logging": "1.0.0",
+    "Microsoft.Extensions.Logging.Console": "1.0.0"
+  },
+  "frameworks": {
+    "net46": {
+      "dependencies": {
+      }
+    },
+    "netstandard1.6": {
+      "imports": "dnxcore50",
+      "buildOptions": {
+        "define": [
+          "LIBLOG_PORTABLE",
+          "NETSTANDARD1_5"
+        ]
+      },
+      "dependencies": {
+        "NETStandard.Library": "1.6.0",
+        "Microsoft.CSharp": "4.0.1",
+        "System.Dynamic.Runtime": "4.0.11"
+      }
+    }
+  },
+  "runtimes": {
+    "win": {},
+    "linux": {},
+    "osx": {}  
+  }
+     
+}

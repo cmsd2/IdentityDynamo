@@ -140,12 +140,12 @@ namespace ElCamino.AspNet.Identity.Dynamo
                       },
                       new AttributeDefinition
                       {
-                        AttributeName = "UserName",
+                        AttributeName = "NormalizedUserName",
                         AttributeType = "S"
                       },
                       new AttributeDefinition
                       {
-                        AttributeName = "Email",
+                        AttributeName = "NormalizedEmail",
                         AttributeType = "S"
                       }
                     },
@@ -176,7 +176,7 @@ namespace ElCamino.AspNet.Identity.Dynamo
                             {
                                 new KeySchemaElement
                                 {
-                                    AttributeName = "Email",
+                                    AttributeName = "NormalizedEmail",
                                     KeyType = KeyType.HASH
                                 },
                                 new KeySchemaElement
@@ -203,7 +203,7 @@ namespace ElCamino.AspNet.Identity.Dynamo
                             {
                                 new KeySchemaElement
                                 {
-                                    AttributeName = "UserName",
+                                    AttributeName = "NormalizedUserName",
                                     KeyType = KeyType.HASH
                                 },
                                 new KeySchemaElement
@@ -301,6 +301,302 @@ namespace ElCamino.AspNet.Identity.Dynamo
                         },
 
                     };
+        }
+
+        public async Task CreateUserRoleTableAsync()
+        {
+            await CreateTableAsync(GenerateUserRolesCreateTableRequest(FormatTableNameWithPrefix(Constants.TableNames.UserRolesTable),
+                Constants.SecondaryIndexNames.RoleUsersIndex,
+                Constants.SecondaryIndexNames.UserNameIndex,
+                Constants.SecondaryIndexNames.UserEmailIndex));
+        }
+
+        public CreateTableRequest GenerateUserRolesCreateTableRequest(string tableName,
+            string roleUsersIndex,
+            string userNameIndex,
+            string userEmailIndex)
+        {
+            return new CreateTableRequest
+            {
+                TableName = tableName,
+                AttributeDefinitions = new List<AttributeDefinition>()
+                    {
+                      new AttributeDefinition
+                      {
+                        AttributeName = "Id",
+                        AttributeType = "S"
+                      },
+                      new AttributeDefinition
+                      {
+                        AttributeName = "UserId",
+                        AttributeType = "S"
+                      },
+                      new AttributeDefinition
+                      {
+                          AttributeName = "RoleName",
+                          AttributeType = "S"
+                      },
+                      new AttributeDefinition
+                      {
+                        AttributeName = "UserName",
+                        AttributeType = "S"
+                      },
+                      new AttributeDefinition
+                      {
+                        AttributeName = "Email",
+                        AttributeType = "S"
+                      }
+                    },
+                KeySchema = new List<KeySchemaElement>()
+                    {
+                      new KeySchemaElement
+                      {
+                        AttributeName = "UserId",
+                        KeyType = KeyType.HASH
+                      },
+                      new KeySchemaElement
+                      {
+                        AttributeName = "Id",
+                        KeyType = KeyType.RANGE
+                      },
+                    },
+                ProvisionedThroughput = new ProvisionedThroughput
+                {
+                    ReadCapacityUnits = 1,
+                    WriteCapacityUnits = 1
+                },
+                GlobalSecondaryIndexes = new List<GlobalSecondaryIndex>
+                    {
+                        new GlobalSecondaryIndex
+                        {
+                            IndexName = roleUsersIndex,
+                            KeySchema = new List<KeySchemaElement>()
+                            {
+                                new KeySchemaElement
+                                {
+                                    AttributeName = "Id",
+                                    KeyType = KeyType.HASH
+                                },
+                                new KeySchemaElement
+                                {
+                                    AttributeName = "UserId",
+                                    KeyType = KeyType.RANGE
+                                },
+
+                            },
+                            Projection = new Projection
+                            {
+                                 ProjectionType = new ProjectionType("ALL")
+                            },
+                            ProvisionedThroughput = new ProvisionedThroughput
+                            {
+                                ReadCapacityUnits = 1,
+                                WriteCapacityUnits = 1
+                            },
+                        },
+                        new GlobalSecondaryIndex
+                        {
+                            IndexName = userEmailIndex,
+                            KeySchema = new List<KeySchemaElement>()
+                            {
+                                new KeySchemaElement
+                                {
+                                    AttributeName = "Email",
+                                    KeyType = KeyType.HASH
+                                },
+                                new KeySchemaElement
+                                {
+                                    AttributeName = "Id",
+                                    KeyType = KeyType.RANGE
+                                },
+
+                            },
+                            Projection = new Projection
+                            {
+                                 ProjectionType = new ProjectionType("ALL")
+                            },
+                            ProvisionedThroughput = new ProvisionedThroughput
+                            {
+                                ReadCapacityUnits = 1,
+                                WriteCapacityUnits = 1
+                            },
+                        },
+                        new GlobalSecondaryIndex
+                        {
+                            IndexName = userNameIndex,
+                            KeySchema = new List<KeySchemaElement>()
+                            {
+                                new KeySchemaElement
+                                {
+                                    AttributeName = "UserName",
+                                    KeyType = KeyType.HASH
+                                },
+                                new KeySchemaElement
+                                {
+                                    AttributeName = "Id",
+                                    KeyType = KeyType.RANGE
+                                },
+                            },
+                            Projection = new Projection
+                            {
+                                 ProjectionType = new ProjectionType("ALL")
+                            },
+                            ProvisionedThroughput = new ProvisionedThroughput
+                            {
+                                ReadCapacityUnits = 1,
+                                WriteCapacityUnits = 1
+                            },
+                        }
+                    },
+            };
+        }
+
+        public async Task CreateUserLoginTableAsync()
+        {
+            await CreateTableAsync(GenerateUserLoginCreateTableRequest(FormatTableNameWithPrefix(Constants.TableNames.UserLoginsTable),
+                Constants.SecondaryIndexNames.UserLoginProviderKeyIndex,
+                Constants.SecondaryIndexNames.UserNameIndex,
+                Constants.SecondaryIndexNames.UserEmailIndex));
+        }
+
+        public CreateTableRequest GenerateUserLoginCreateTableRequest(string tableName,
+            string loginProviderKeyIndex,
+            string userNameIndex,
+            string userEmailIndex)
+        {
+            return new CreateTableRequest
+            {
+                TableName = tableName,
+                AttributeDefinitions = new List<AttributeDefinition>()
+                    {
+                      new AttributeDefinition
+                      {
+                        AttributeName = "Id",
+                        AttributeType = "S"
+                      },
+                      new AttributeDefinition
+                      {
+                        AttributeName = "UserId",
+                        AttributeType = "S"
+                      },
+                      new AttributeDefinition
+                      {
+                          AttributeName = "LoginProviderPartitionKey",
+                          AttributeType = "S"
+                      },
+                      new AttributeDefinition
+                      {
+                        AttributeName = "UserName",
+                        AttributeType = "S"
+                      },
+                      new AttributeDefinition
+                      {
+                        AttributeName = "Email",
+                        AttributeType = "S"
+                      }
+                    },
+                KeySchema = new List<KeySchemaElement>()
+                    {
+                      new KeySchemaElement
+                      {
+                        AttributeName = "UserId",
+                        KeyType = KeyType.HASH
+                      },
+                      new KeySchemaElement
+                      {
+                        AttributeName = "Id",
+                        KeyType = KeyType.RANGE
+                      },
+                    },
+                ProvisionedThroughput = new ProvisionedThroughput
+                {
+                    ReadCapacityUnits = 1,
+                    WriteCapacityUnits = 1
+                },
+                GlobalSecondaryIndexes = new List<GlobalSecondaryIndex>
+                    {
+                        new GlobalSecondaryIndex
+                        {
+                            IndexName = loginProviderKeyIndex,
+                            KeySchema = new List<KeySchemaElement>()
+                            {
+                                new KeySchemaElement
+                                {
+                                    AttributeName = "LoginProviderPartitionKey",
+                                    KeyType = KeyType.HASH
+                                },
+                                new KeySchemaElement
+                                {
+                                    AttributeName = "Id",
+                                    KeyType = KeyType.RANGE
+                                },
+
+                            },
+                            Projection = new Projection
+                            {
+                                 ProjectionType = new ProjectionType("ALL")
+                            },
+                            ProvisionedThroughput = new ProvisionedThroughput
+                            {
+                                ReadCapacityUnits = 1,
+                                WriteCapacityUnits = 1
+                            },
+                        },
+                        new GlobalSecondaryIndex
+                        {
+                            IndexName = userEmailIndex,
+                            KeySchema = new List<KeySchemaElement>()
+                            {
+                                new KeySchemaElement
+                                {
+                                    AttributeName = "Email",
+                                    KeyType = KeyType.HASH
+                                },
+                                new KeySchemaElement
+                                {
+                                    AttributeName = "Id",
+                                    KeyType = KeyType.RANGE
+                                },
+
+                            },
+                            Projection = new Projection
+                            {
+                                 ProjectionType = new ProjectionType("ALL")
+                            },
+                            ProvisionedThroughput = new ProvisionedThroughput
+                            {
+                                ReadCapacityUnits = 1,
+                                WriteCapacityUnits = 1
+                            },
+                        },
+                        new GlobalSecondaryIndex
+                        {
+                            IndexName = userNameIndex,
+                            KeySchema = new List<KeySchemaElement>()
+                            {
+                                new KeySchemaElement
+                                {
+                                    AttributeName = "UserName",
+                                    KeyType = KeyType.HASH
+                                },
+                                new KeySchemaElement
+                                {
+                                    AttributeName = "Id",
+                                    KeyType = KeyType.RANGE
+                                },
+                            },
+                            Projection = new Projection
+                            {
+                                 ProjectionType = new ProjectionType("ALL")
+                            },
+                            ProvisionedThroughput = new ProvisionedThroughput
+                            {
+                                ReadCapacityUnits = 1,
+                                WriteCapacityUnits = 1
+                            },
+                        }
+                    },
+            };
         }
 
         public async Task CreateIndexTableAsync()

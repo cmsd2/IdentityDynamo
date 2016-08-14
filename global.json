@@ -1,0 +1,6 @@
+{
+  "projects": [
+    "src/identity.dynamo",
+    "tests/identity.dynamo.tests"
+  ] 
+}

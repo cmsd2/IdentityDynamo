@@ -1,20 +1,32 @@
 ﻿// MIT License Copyright 2014 (c) David Melendez. All rights reserved. See License.txt in the project root for license information.
 using System;
+using System.Collections.Generic;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ElCamino.AspNet.Identity.Dynamo;
-using Microsoft.AspNet.Identity;
 using ElCamino.AspNet.Identity.Dynamo.Model;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 
 namespace ElCamino.AspNet.Identity.Dynamo.Tests
 {
     [TestClass]
     public class RoleStoreTests
     {
+        private ILoggerFactory loggerFactory;
+
         private static IdentityRole CurrentRole;
+
+        public RoleStoreTests()
+        {
+            loggerFactory = new LoggerFactory();
+            loggerFactory.AddConsole();
+        }
+
         [TestInitialize]
         public void Initialize()
         {
-            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>())
+            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>(new LoggerFactory()))
             {
                 var taskCreateTables = store.CreateTableIfNotExistsAsync();
                 taskCreateTables.Wait();
@@ -28,7 +40,7 @@ namespace ElCamino.AspNet.Identity.Dynamo.Tests
         {
             try
             {
-                new RoleStore<IdentityRole>(null);
+                new RoleStore<IdentityRole>(loggerFactory);
             }
             catch (ArgumentException) { }
         }
@@ -36,10 +48,11 @@ namespace ElCamino.AspNet.Identity.Dynamo.Tests
         [TestMethod]
         [TestCategory("Identity.Dynamo.RoleStore")]
         public void CreateRole()
-        {    
-            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>())
+        {
+            ILogger<RoleManager<IdentityRole>> logger = loggerFactory.CreateLogger<RoleManager<IdentityRole>>();
+            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>(loggerFactory))
             {
-                using (RoleManager<IdentityRole> manager = new RoleManager<IdentityRole>(store))
+                using (RoleManager<IdentityRole> manager = new RoleManager<IdentityRole>(store, null, null, null, logger, null)) 
                 {
                     string roleNew = string.Format("TestRole_{0}", Guid.NewGuid());
                     var role = new IdentityRole(roleNew);
@@ -49,7 +62,7 @@ namespace ElCamino.AspNet.Identity.Dynamo.Tests
 
                     try
                     {
-                        var task = store.CreateAsync(null);
+                        var task = store.CreateAsync(null, CancellationToken.None);
                         task.Wait();
                     }
                     catch (Exception ex)
@@ -64,14 +77,16 @@ namespace ElCamino.AspNet.Identity.Dynamo.Tests
         [TestCategory("Identity.Dynamo.RoleStore")]
         public void ThrowIfDisposed()
         {
-            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>())
+            ILogger<RoleManager<IdentityRole>> logger = loggerFactory.CreateLogger<RoleManager<IdentityRole>>();
+            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>(loggerFactory))
             {
-                RoleManager<IdentityRole> manager = new RoleManager<IdentityRole>(store);
+                RoleManager<IdentityRole> manager = new RoleManager<IdentityRole>(store, null, null, null, logger, null);
+                
                 manager.Dispose();
 
                 try
                 {
-                    var task = store.DeleteAsync(null);
+                    var task = store.DeleteAsync(null, CancellationToken.None);
                 }
                 catch (ArgumentException) { }
             }
@@ -81,9 +96,10 @@ namespace ElCamino.AspNet.Identity.Dynamo.Tests
         [TestCategory("Identity.Dynamo.RoleStore")]
         public void UpdateRole()
         {
-            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>())
+            ILogger<RoleManager<IdentityRole>> logger = loggerFactory.CreateLogger<RoleManager<IdentityRole>>();
+            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>(loggerFactory))
             {
-                using (RoleManager<IdentityRole> manager = new RoleManager<IdentityRole>(store))
+                using (RoleManager<IdentityRole> manager = new RoleManager<IdentityRole>(store, null, null, null, logger, null))
                 {
                     string roleNew = string.Format("TestRole_{0}", Guid.NewGuid());
 
@@ -103,7 +119,7 @@ namespace ElCamino.AspNet.Identity.Dynamo.Tests
 
                     try
                     {
-                        var task = store.UpdateAsync(null);
+                        var task = store.UpdateAsync(null, CancellationToken.None);
                         task.Wait();
                     }
                     catch (Exception ex)
@@ -118,9 +134,10 @@ namespace ElCamino.AspNet.Identity.Dynamo.Tests
         [TestCategory("Identity.Dynamo.RoleStore")]
         public void UpdateRole2()
         {
-            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>())
+            ILogger<RoleManager<IdentityRole>> logger = loggerFactory.CreateLogger<RoleManager<IdentityRole>>();
+            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>(loggerFactory))
             {
-                using (RoleManager<IdentityRole> manager = new RoleManager<IdentityRole>(store))
+                using (RoleManager<IdentityRole> manager = new RoleManager<IdentityRole>(store, null, null, null, logger, null))
                 {
                     string roleNew = string.Format("{0}_TestRole", Guid.NewGuid());
 
@@ -145,9 +162,10 @@ namespace ElCamino.AspNet.Identity.Dynamo.Tests
         [TestCategory("Identity.Dynamo.RoleStore")]
         public void DeleteRole()
         {
-            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>())
+            ILogger<RoleManager<IdentityRole>> logger = loggerFactory.CreateLogger<RoleManager<IdentityRole>>();
+            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>(loggerFactory))
             {
-                using (RoleManager<IdentityRole> manager = new RoleManager<IdentityRole>(store))
+                using (RoleManager<IdentityRole> manager = new RoleManager<IdentityRole>(store, null, null, null, logger, null))
                 {
                     string roleNew = string.Format("TestRole_{0}", Guid.NewGuid());
                     var role = new IdentityRole(roleNew);
@@ -162,7 +180,7 @@ namespace ElCamino.AspNet.Identity.Dynamo.Tests
 
                     try
                     {
-                        var task = store.DeleteAsync(null);
+                        var task = store.DeleteAsync(null, CancellationToken.None);
                         task.Wait();
                     }
                     catch (Exception ex)
@@ -177,7 +195,7 @@ namespace ElCamino.AspNet.Identity.Dynamo.Tests
         [TestCategory("Identity.Dynamo.RoleStore")]
         public void RolesGetter()
         {
-            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>())
+            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>(new LoggerFactory()))
             {
                 try
                 {
@@ -191,9 +209,10 @@ namespace ElCamino.AspNet.Identity.Dynamo.Tests
         [TestCategory("Identity.Dynamo.RoleStore")]
         public void FindRoleById()
         {
-            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>())
+            ILogger<RoleManager<IdentityRole>> logger = loggerFactory.CreateLogger<RoleManager<IdentityRole>>();
+            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>(loggerFactory))
             {
-                using (RoleManager<IdentityRole> manager = new RoleManager<IdentityRole>(store))
+                using (RoleManager<IdentityRole> manager = new RoleManager<IdentityRole>(store, null, null, null, logger, null))
                 {
                     var findTask = manager.FindByIdAsync(CurrentRole.Id);
                     Assert.IsNotNull(findTask.Result, "Find Role Result is null");
@@ -206,9 +225,10 @@ namespace ElCamino.AspNet.Identity.Dynamo.Tests
         [TestCategory("Identity.Dynamo.RoleStore")]
         public void FindRoleByName()
         {
-            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>())
+            ILogger<RoleManager<IdentityRole>> logger = loggerFactory.CreateLogger<RoleManager<IdentityRole>>();
+            using (RoleStore<IdentityRole> store = new RoleStore<IdentityRole>(loggerFactory))
             {
-                using (RoleManager<IdentityRole> manager = new RoleManager<IdentityRole>(store))
+                using (RoleManager<IdentityRole> manager = new RoleManager<IdentityRole>(store, null, null, null, logger, null))
                 {
 
                     var findTask = manager.FindByNameAsync(CurrentRole.Name);

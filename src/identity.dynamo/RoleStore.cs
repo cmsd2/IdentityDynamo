@@ -4,26 +4,28 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNet.Identity;
+using Microsoft.AspNetCore.Identity;
 using System.Net;
 using System.Diagnostics;
+using System.Threading;
 using ElCamino.AspNet.Identity.Dynamo.Model;
 using ElCamino.AspNet.Identity.Dynamo.Helpers;
 using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.DataModel;
+using Microsoft.Extensions.Logging;
 
 namespace ElCamino.AspNet.Identity.Dynamo
 {
-    public class RoleStore<TRole> : RoleStore<TRole, string, IdentityUserRole>, IQueryableRoleStore<TRole>, IQueryableRoleStore<TRole, string>, IRoleStore<TRole, string> where TRole : IdentityRole, new()
+    public class RoleStore<TRole> : RoleStore<TRole, IdentityUserRole>, IQueryableRoleStore<TRole>, IRoleStore<TRole> where TRole : IdentityRole, new()
     {
-        public RoleStore()
-            : this(new IdentityCloudContext())
+        public RoleStore(ILoggerFactory loggerFactory)
+            : this(loggerFactory, new IdentityCloudContext())
         {
             
         }
 
-        public RoleStore(IdentityCloudContext context)
-            : base(context) { }
+        public RoleStore(ILoggerFactory loggerFactory, IdentityCloudContext context)
+            : base(loggerFactory, context) { }
 
         //Fixing code analysis issue CA1063
         protected override void Dispose(bool disposing)
@@ -32,18 +34,20 @@ namespace ElCamino.AspNet.Identity.Dynamo
         }
     }
 
-    public class RoleStore<TRole, TKey, TUserRole> : IQueryableRoleStore<TRole, TKey>, IRoleStore<TRole, TKey>, IDisposable
-        where TRole : IdentityRole<TKey,TUserRole>, new()
-        where TUserRole : IdentityUserRole<TKey>, new()
+    public class RoleStore<TRole, TUserRole> : IQueryableRoleStore<TRole>, IRoleStore<TRole>, IDisposable
+        where TRole : IdentityRole<string, TUserRole>, new()
+        where TUserRole : IdentityUserRole<string>, new()
     {
         private bool _disposed;
+        private readonly ILogger _logger;
 
-        public RoleStore(IdentityCloudContext<IdentityUser, IdentityRole, string, IdentityUserLogin, IdentityUserRole, IdentityUserClaim> context)
+        public RoleStore(ILoggerFactory loggerFactory, IdentityCloudContext<IdentityUser, IdentityRole, string, IdentityUserLogin, IdentityUserRole, IdentityUserClaim> context)
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
+            this._logger = loggerFactory.CreateLogger("RoleStore");
             this.Context = context;
         }
 
@@ -52,37 +56,127 @@ namespace ElCamino.AspNet.Identity.Dynamo
             await Context.CreateRoleTableAsync();
         }
 
-        public async virtual Task CreateAsync(TRole role)
+        public virtual async Task<IdentityResult> CreateAsync(TRole role, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
+
             if (role == null)
             {
-                throw new ArgumentNullException("role");
+                throw new ArgumentNullException(nameof(role));
             }
 
             ((IGenerateKeys)role).GenerateKeys();
 
-            await Context.SaveAsync<TRole>(role, new DynamoDBOperationConfig()
-            {
-                TableNamePrefix = Context.TablePrefix,
-                ConsistentRead = true,
-            });
 
+            try
+            {
+                await Context.SaveAsync<TRole>(role, new DynamoDBOperationConfig()
+                {
+                    TableNamePrefix = Context.TablePrefix,
+                    ConsistentRead = true,
+                }, cancellationToken);
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation($"error saving role: {e}");
+                return IdentityResult.Failed(new IdentityErrorDescriber().DefaultError());
+            }
+
+            return IdentityResult.Success;
         }
 
-        public async virtual Task DeleteAsync(TRole role)
+        public virtual async Task<IdentityResult> DeleteAsync(TRole role, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
+
             if (role == null)
             {
-                throw new ArgumentNullException("role");
+                throw new ArgumentNullException(nameof(role));
             }
-            await Context.DeleteAsync<TRole>(role, new DynamoDBOperationConfig()
-            {
-                TableNamePrefix = Context.TablePrefix,
-                ConsistentRead = true,
-            });
 
+            try
+            {
+                await Context.DeleteAsync<TRole>(role, new DynamoDBOperationConfig()
+                {
+                    TableNamePrefix = Context.TablePrefix,
+                    ConsistentRead = true,
+                }, cancellationToken);
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation($"error deleting role: {e}");
+                return IdentityResult.Failed(new IdentityErrorDescriber().DefaultError());
+            }
+            
+
+            return IdentityResult.Success;
+        }
+
+        public Task<string> GetRoleIdAsync(TRole role, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+
+            return Task.FromResult(role.Id);
+        }
+
+        public Task<string> GetRoleNameAsync(TRole role, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+
+            return Task.FromResult(role.Name);
+        }
+
+        public async Task SetRoleNameAsync(TRole role, string roleName, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+
+            role.Name = roleName;
+            await CreateAsync(role, cancellationToken);
+        }
+
+        public async Task<string> GetNormalizedRoleNameAsync(TRole role, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+
+            var name = await GetRoleNameAsync(role, cancellationToken);
+
+            return Normalize(name);
+        }
+
+        public Task SetNormalizedRoleNameAsync(TRole role, string name, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            var normalizedName = Normalize(name);
+
+            return SetRoleNameAsync(role, normalizedName, cancellationToken);
         }
 
         public void Dispose()
@@ -104,25 +198,32 @@ namespace ElCamino.AspNet.Identity.Dynamo
             }
         }
 
-        public async Task<TRole> FindByIdAsync(TKey roleId)
+        public async Task<TRole> FindByIdAsync(string roleId, CancellationToken cancellationToken)
         {
-            this.ThrowIfDisposed();
-            return await FindIdAsync(roleId.ToString());
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            return await FindIdAsync(roleId.ToString(), cancellationToken);
         }
 
-        public async Task<TRole> FindByNameAsync(string roleName)
+        public async Task<TRole> FindByNameAsync(string roleName, CancellationToken cancellationToken)
         {
-            this.ThrowIfDisposed();
-            return await FindIdAsync(KeyHelper.GenerateRowKeyIdentityRole(roleName));
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            return await FindIdAsync(KeyHelper.GenerateRowKeyIdentityRole(roleName), cancellationToken);
         }
 
-        private Task<TRole> FindIdAsync(string roleId)
+        private Task<TRole> FindIdAsync(string roleId, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            
             return Context.LoadAsync<TRole>(roleId, new DynamoDBOperationConfig()
                 {
                     TableNamePrefix = Context.TablePrefix,
                     ConsistentRead = true,
-                });
+                }, cancellationToken);
         }
 
         private void ThrowIfDisposed()
@@ -133,28 +234,41 @@ namespace ElCamino.AspNet.Identity.Dynamo
             }
         }
 
-        public async virtual Task UpdateAsync(TRole role)
+        public virtual async Task<IdentityResult> UpdateAsync(TRole role, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
+
             if (role == null)
             {
-                throw new ArgumentNullException("role");
+                throw new ArgumentNullException(nameof(role));
+            }
+            
+            try
+            {
+                var batchWrite = Context.CreateBatchWrite<TRole>(new DynamoDBOperationConfig()
+                {
+                    TableNamePrefix = Context.TablePrefix,
+                    ConsistentRead = true,
+                });
+
+                var g = role as IGenerateKeys;
+                if (!g.PeekRowKey().Equals(role.Id.ToString(), StringComparison.Ordinal))
+                {
+                    batchWrite.AddDeleteKey(role.Id.ToString());
+                }
+                g.GenerateKeys();
+                batchWrite.AddPutItem(role);
+
+                await Context.ExecuteBatchWriteAsync(new BatchWrite[] {batchWrite}, cancellationToken);
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation($"error updating role: {e}");
+                return IdentityResult.Failed(new IdentityErrorDescriber().DefaultError());
             }
 
-            var batchWrite = Context.CreateBatchWrite<TRole>(new DynamoDBOperationConfig()
-            {
-                TableNamePrefix = Context.TablePrefix,
-                ConsistentRead = true,
-            });
-           
-            IGenerateKeys g = role as IGenerateKeys;
-            if (!g.PeekRowKey().Equals(role.Id.ToString(), StringComparison.Ordinal))
-            {
-                batchWrite.AddDeleteKey(role.Id.ToString());
-            }
-            g.GenerateKeys();
-            batchWrite.AddPutItem(role);
-            await Context.ExecuteBatchWriteAsync(new BatchWrite[] { batchWrite });
+            return IdentityResult.Success;
         }
 
         public IdentityCloudContext<IdentityUser, IdentityRole, string, IdentityUserLogin, IdentityUserRole, IdentityUserClaim> Context { get; private set; }
@@ -168,6 +282,12 @@ namespace ElCamino.AspNet.Identity.Dynamo
             {
                 throw new NotSupportedException();
             }
+        }
+
+        protected virtual string Normalize(string str)
+        {
+            if (string.IsNullOrWhiteSpace(str)) return str;
+            return str.ToLower().Trim();
         }
 
     }
